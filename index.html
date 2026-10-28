@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RealisticMart | Shop Online</title>
+<meta name="description" content="Shop online at RealisticMart. Cash on Delivery available.">
+<style>
+:root {
+  --green:#16734a;
+  --green-dark:#105637;
+  --light:#f4f8f5;
+  --text:#1c2921;
+  --muted:#68766d;
+  --border:#e0e8e2;
+  --white:#fff;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  color:var(--text);
+  background:var(--light);
+}
+button,input,textarea,select { font:inherit; }
+button { cursor:pointer; }
+header {
+  background:var(--white);
+  border-bottom:1px solid var(--border);
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+.topbar {
+  max-width:1200px;
+  margin:auto;
+  padding:16px 20px;
+  display:flex;
+  gap:18px;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+.logo { color:var(--green); font-size:25px; font-weight:800; }
+.logo span { color:var(--text); }
+.search { flex:1; min-width:170px; max-width:480px; }
+input,textarea,select {
+  width:100%;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:white;
+}
+.btn {
+  padding:11px 15px;
+  border:0;
+  border-radius:9px;
+  background:var(--green);
+  color:white;
+  font-weight:700;
+}
+.btn:hover { background:var(--green-dark); }
+.btn.secondary { background:#e8f1eb; color:var(--green-dark); }
+.btn:disabled { opacity:.5; cursor:not-allowed; }
+.hero {
+  max-width:1200px;
+  margin:24px auto;
+  padding:40px 24px;
+  border-radius:20px;
+  background:linear-gradient(125deg,#dcefe1,#f8fbf8);
+}
+.hero h1 { font-size:clamp(30px,5vw,48px); margin:0 0 12px; }
+.hero p { color:var(--muted); max-width:600px; line-height:1.6; }
+.container { max-width:1200px; padding:0 20px; margin:25px auto; }
+.toolbar {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  margin-bottom:20px;
+}
+.grid {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:18px;
+}
+.card {
+  background:white;
+  border:1px solid var(--border);
+  border-radius:15px;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.product-image {
+  width:100%;
+  height:210px;
+  object-fit:cover;
+  background:#edf2ee;
+}
+.card-content { padding:15px; display:flex; flex:1; flex-direction:column; }
+.category { color:var(--green); font-size:12px; font-weight:700; text-transform:uppercase; }
+.card h3 { margin:9px 0; }
+.description { color:var(--muted); font-size:14px; line-height:1.5; flex:1; }
+.price { font-size:21px; font-weight:800; margin:12px 0; }
+.stock { font-size:13px; color:var(--muted); margin-bottom:12px; }
+.card .btn { width:100%; }
+.notice {
+  background:white;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:15px;
+  line-height:1.6;
+}
+footer { margin-top:45px; padding:25px 20px; background:#173c2b; color:white; text-align:center; }
+footer p { margin:8px; }
+dialog {
+  width:min(560px,94vw);
+  max-height:90vh;
+  overflow:auto;
+  border:0;
+  border-radius:16px;
+  padding:22px;
+  box-shadow:0 20px 80px #0003;
+}
+dialog::backdrop { background:#12201699; }
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.full { grid-column:1/-1; }
+label { display:block; font-size:13px; font-weight:700; margin-bottom:6px; }
+.field { margin-bottom:12px; }
+.cart-line {
+  display:flex;
+  gap:12px;
+  justify-content:space-between;
+  align-items:center;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
+}
+.cart-line small { color:var(--muted); }
+.total { font-size:22px; font-weight:800; margin:18px 0; }
+.empty { text-align:center; padding:35px 10px; color:var(--muted); }
+#statusMessage { margin:15px 0; line-height:1.5; }
+.hidden { display:none!important; }
+@media(max-width:900px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:520px) {
+  .grid { grid-template-columns:1fr 1fr; gap:10px; }
+  .product-image { height:145px; }
+  .card-content { padding:10px; }
+  .card h3 { font-size:15px; }
+  .description { font-size:12px; }
+  .price { font-size:17px; }
+  .topbar { gap:10px; }
+  .hero { margin:15px 12px; padding:25px 18px; }
+  .container { padding:0 12px; }
+  .form-grid { grid-template-columns:1fr; }
+  .full { grid-column:auto; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <div class="logo">Realistic<span>Mart</span></div>
+    <div class="search">
+      <input id="searchInput" type="search" placeholder="Search products...">
+    </div>
+    <button class="btn" id="cartButton">Cart (<span id="cartCount">0</span>)</button>
+  </div>
+</header>
+
+<section class="hero">
+  <h1>Everyday shopping, made simple.</h1>
+  <p>Discover products picked for your everyday needs. Browse our collection and pay conveniently with Cash on Delivery.</p>
+  <button class="btn" onclick="document.getElementById('shop').scrollIntoView({behavior:'smooth'})">Shop Now →</button>
+</section>
+
+<main class="container" id="shop">
+  <div class="toolbar">
+    <div>
+      <h2 style="margin:0 0 5px">Our Products</h2>
+      <small id="productCount">Loading products...</small>
+    </div>
+    <select id="categoryFilter" style="max-width:220px" aria-label="Filter by category">
+      <option value="">All categories</option>
+    </select>
+  </div>
+  <div id="statusMessage" role="status"></div>
+  <div class="grid" id="productGrid"></div>
+</main>
+
+<section class="container">
+  <div class="notice">
+    <strong>Payment:</strong> Cash on Delivery only.<br>
+    <strong>Cancellation:</strong> You may request cancellation within five hours of placing an order. After five hours, the online cancellation option is no longer available. Contact customer care for help.<br>
+    <strong>Returns:</strong> Returns after delivery are subject to the store's published return policy. Please contact customer care for assistance.
+  </div>
+</section>
+
+<footer>
+  <strong>RealisticMart</strong>
+  <p>Simple shopping. Convenient delivery.</p>
+  <p>Need help? Contact our customer-care team.</p>
+  <a id="supportLink" href="#" style="color:white">WhatsApp Customer Care</a>
+</footer>
+
+<dialog id="cartDialog">
+  <h2>Your Cart</h2>
+  <div id="cartItems"></div>
+  <div class="total" id="cartTotal">Total: ₹0.00</div>
+  <p><button class="btn" id="checkoutButton">Proceed to Checkout</button>
+  <button class="btn secondary" onclick="document.getElementById('cartDialog').close()">Continue Shopping</button></p>
+</dialog>
+
+<dialog id="checkoutDialog">
+  <h2>Checkout</h2>
+  <p>Payment method: <strong>Cash on Delivery (COD)</strong></p>
+  <p>Please confirm your delivery information.</p>
+  <form id="checkoutForm">
+    <div class="form-grid">
+      <div class="field full">
+        <label for="customerName">Full name *</label>
+        <input id="customerName" required maxlength="100" autocomplete="name">
+      </div>
+      <div class="field full">
+        <label for="phone">Phone number *</label>
+        <input id="phone" required type="tel" maxlength="20" autocomplete="tel" pattern="[0-9+() -]{7,20}">
+      </div>
+      <div class="field full">
+        <label for="address1">Address line 1 *</label>
+        <input id="address1" required maxlength="200" autocomplete="address-line1">
+      </div>
+      <div class="field full">
+        <label for="address2">Address line 2</label>
+        <input id="address2" maxlength="200" autocomplete="address-line2">
+      </div>
+      <div class="field">
+        <label for="city">City *</label>
+        <input id="city" required maxlength="80" autocomplete="address-level2">
+      </div>
+      <div class="field">
+        <label for="state">State *</label>
+        <input id="state" required maxlength="80" autocomplete="address-level1">
+      </div>
+      <div class="field full">
+        <label for="pincode">PIN code *</label>
+        <input id="pincode" required maxlength="10" autocomplete="postal-code">
+      </div>
+    </div>
+    <div class="notice">
+      By placing the order, you agree to the five-hour cancellation window and the return policy described on this page.
+    </div>
+    <p id="checkoutMessage" role="status"></p>
+    <button class="btn" id="placeOrderButton" type="submit">Place COD Order</button>
+    <button class="btn secondary" type="button" id="closeCheckout">Go Back</button>
+  </form>
+</dialog>
+
+<dialog id="successDialog">
+  <h2>Thank you for your order!</h2>
+  <p id="successMessage"></p>
+  <button class="btn" onclick="document.getElementById('successDialog').close()">Continue Shopping</button>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/*
+  REALISTICMART CONFIGURATION
+  Use only the Supabase publishable key here.
+  Never place a secret/service_role key in browser code.
+*/
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+
+/*
+  Deploy a secure Supabase Edge Function named "place-order".
+  It must validate items/prices/stock server-side and create orders safely.
+  Until deployed, checkout intentionally will not submit customer details.
+*/
+const PLACE_ORDER_FUNCTION = "place-order";
+
+let db = null;
+const cart = new Map();
+let products = [];
+
+const $ = id => document.getElementById(id);
+const money = amount => new Intl.NumberFormat("en-IN", {
+  style:"currency", currency:"INR"
+}).format(Number(amount) || 0);
+
+function configured() {
+  return SUPABASE_URL.startsWith("https://") &&
+         !SUPABASE_URL.includes("YOUR_") &&
+         SUPABASE_PUBLISHABLE_KEY &&
+         !SUPABASE_PUBLISHABLE_KEY.includes("YOUR_");
+}
+
+function setMessage(message) {
+  $("statusMessage").textContent = message;
+}
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  }[ch]));
+}
+
+function placeholderImage() {
+  return "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#edf2ee"/><text x="50%" y="50%" text-anchor="middle" fill="#68766d" font-size="28">RealisticMart</text></svg>'
+  );
+}
+
+function safeImage(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:") return parsed.href;
+  } catch {}
+  return placeholderImage();
+}
+
+function renderProducts() {
+  const search = $("searchInput").value.trim().toLowerCase();
+  const category = $("categoryFilter").value;
+  const filtered = products.filter(p =>
+    (!category || p.category === category) &&
+    (!search || `${p.name} ${p.description} ${p.category}`.toLowerCase().includes(search))
+  );
+
+  $("productCount").textContent = `${filtered.length} product(s)`;
+  const grid = $("productGrid");
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">No products found. Please try another search.</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => `
+    <article class="card">
+      <img class="product-image" src="${escapeHTML(safeImage(p.image_url))}"
+           alt="${escapeHTML(p.name)}" loading="lazy"
+           onerror="this.onerror=null;this.src='${placeholderImage()}'">
+      <div class="card-content">
+        <div class="category">${escapeHTML(p.category || "General")}</div>
+        <h3>${escapeHTML(p.name)}</h3>
+        <div class="description">${escapeHTML(p.description || "")}</div>
+        <div class="price">${money(p.price)}</div>
+        <div class="stock">${Number(p.stock_quantity) > 0 ? "In stock" : "Out of stock"}</div>
+        <button class="btn" ${Number(p.stock_quantity) < 1 ? "disabled" : ""}
+          onclick="addToCart(${Number(p.id)})">Add to Cart</button>
+      </div>
+    </article>
+  `).join("");
+}
+
+function renderCategories() {
+  const previous = $("categoryFilter").value;
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+  $("categoryFilter").innerHTML = '<option value="">All categories</option>' +
+    categories.map(c => `<option value="${escapeHTML(c)}">${escapeHTML(c)}</option>`).join("");
+  if (categories.includes(previous)) $("categoryFilter").value = previous;
+}
+
+async function loadProducts() {
+  if (!configured()) {
+    products = [];
+    renderProducts();
+    setMessage("Setup needed: add your Supabase project URL and publishable key in index.html.");
+    return;
+  }
+
+  if (!db) {
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  }
+
+  const { data, error } = await db.from("products")
+    .select("id,name,description,price,image_url,category,stock_quantity,active")
+    .eq("active", true)
+    .order("created_at", { ascending:false });
+
+  if (error) {
+    setMessage("We couldn't load products. Check your Supabase connection and products-table read policy.");
+    console.error("Product loading error:", error.message);
+    return;
+  }
+
+  products = data || [];
+  renderCategories();
+  renderProducts();
+  setMessage(products.length ? "" : "No products have been added yet. Please visit us again soon.");
+}
+
+function addToCart(id) {
+  const product = products.find(p => Number(p.id) === Number(id));
+  if (!product) return;
+
+  const existing = cart.get(id) || 0;
+  if (existing + 1 > Number(product.stock_quantity)) {
+    alert("Sorry, there isn't enough stock available.");
+    return;
+  }
+
+  cart.set(id, existing + 1);
+  updateCartCount();
+}
+
+function updateCartCount() {
+  $("cartCount").textContent = [...cart.values()].reduce((sum, qty) => sum + qty, 0);
+}
+
+function cartTotal() {
+  return [...cart.entries()].reduce((sum, [id, qty]) => {
+    const p = products.find(x => Number(x.id) === Number(id));
+    return sum + (p ? Number(p.price) * qty : 0);
+  }, 0);
+}
+
+function renderCart() {
+  const entries = [...cart.entries()];
+  if (!entries.length) {
+    $("cartItems").innerHTML = '<div class="empty">Your cart is empty.</div>';
+  } else {
+    $("cartItems").innerHTML = entries.map(([id, qty]) => {
+      const p = products.find(x => Number(x.id) === Number(id));
+      if (!p) return "";
+      return `
+        <div class="cart-line">
+          <div><strong>${escapeHTML(p.name)}</strong><br><small>${money(p.price)} each</small></div>
+          <div>
+            <button class="btn secondary" onclick="changeQty(${Number(id)},-1)">−</button>
+            <strong>${qty}</strong>
+            <button class="btn secondary" onclick="changeQty(${Number(id)},1)">+</button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+  $("cartTotal").textContent = "Total: " + money(cartTotal());
+}
+
+function changeQty(id, delta) {
+  const current = cart.get(id) || 0;
+  const p = products.find(x => Number(x.id) === Number(id));
+  const next = current + delta;
+
+  if (!p || next < 0) return;
+  if (next > Number(p.stock_quantity)) {
+    alert("The requested quantity exceeds available stock.");
+    return;
+  }
+
+  if (next === 0) cart.delete(id);
+  else cart.set(id, next);
+
+  updateCartCount();
+  renderCart();
+}
+
+$("cartButton").addEventListener("click", () => {
+  renderCart();
+  $("cartDialog").showModal();
+});
+
+$("checkoutButton").addEventListener("click", () => {
+  if (!cart.size) {
+    alert("Your cart is empty.");
+    return;
+  }
+  $("cartDialog").close();
+  $("checkoutMessage").textContent = "";
+  $("checkoutDialog").showModal();
+});
+
+$("closeCheckout").addEventListener("click", () => $("checkoutDialog").close());
+$("searchInput").addEventListener("input", renderProducts);
+$("categoryFilter").addEventListener("change", renderProducts);
+
+$("checkoutForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (!configured()) {
+    $("checkoutMessage").textContent = "Store setup is incomplete. Please try again later.";
+    return;
+  }
+
+  if (!cart.size) {
+    $("checkoutMessage").textContent = "Your cart is empty.";
+    return;
+  }
+
+  /*
+    IMPORTANT:
+    Prices and stock must be checked again by the server.
+    This request deliberately requires an Edge Function rather than
+    inserting directly into the orders table from the public browser.
+  */
+  const items = [...cart.entries()].map(([id, quantity]) => ({ product_id:Number(id), quantity }));
+
+  const payload = {
+    customer_name:$("customerName").value.trim(),
+    phone:$("phone").value.trim(),
+    address_line1:$("address1").value.trim(),
+    address_line2:$("address2").value.trim(),
+    city:$("city").value.trim(),
+    state:$("state").value.trim(),
+    pincode:$("pincode").value.trim(),
+    payment_method:"COD",
+    items
+  };
+
+  $("placeOrderButton").disabled = true;
+  $("checkoutMessage").textContent = "Submitting your order securely...";
+
+  try {
+    const { data, error } = await db.functions.invoke(PLACE_ORDER_FUNCTION, { body:payload });
+    if (error) throw error;
+    if (!data || !data.order_number) {
+      throw new Error("The server did not confirm the order.");
+    }
+
+    cart.clear();
+    updateCartCount();
+    $("checkoutDialog").close();
+    $("successMessage").textContent = "Your order number is " + data.order_number + ". Please keep it for reference.";
+    $("successDialog").showModal();
+    await loadProducts();
+  } catch (error) {
+    console.error("Checkout error:", error);
+    $("checkoutMessage").textContent =
+      "Your order was not confirmed. Please try again later or contact customer care. If you are unsure whether it was placed, check before submitting again.";
+  } finally {
+    $("placeOrderButton").disabled = false;
+  }
+});
+
+/* Replace this with your customer-care WhatsApp number, including country code. */
+const CUSTOMER_CARE_WHATSAPP = "";
+if (/^\d{8,15}$/.test(CUSTOMER_CARE_WHATSAPP)) {
+  $("supportLink").href = "https://wa.me/" + CUSTOMER_CARE_WHATSAPP;
+  $("supportLink").target = "_blank";
+  $("supportLink").rel = "noopener noreferrer";
+} else {
+  $("supportLink").addEventListener("click", event => {
+    event.preventDefault();
+    alert("Customer-care WhatsApp is not configured yet.");
+  });
+}
+
+loadProducts();
+</script>
+</body>
+      </html>
