@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RealisticMart | Admin</title>
+<style>
+:root {
+  --green:#16734a;
+  --dark:#123d2a;
+  --bg:#f3f7f4;
+  --border:#dfe8e1;
+  --muted:#65736a;
+  --white:#fff;
+}
+* { box-sizing:border-box; }
+body { margin:0; font-family:Arial,Helvetica,sans-serif; background:var(--bg); color:#1b2820; }
+button,input,textarea,select { font:inherit; }
+button { cursor:pointer; }
+header {
+  background:var(--dark); color:white; padding:18px 22px;
+  display:flex; align-items:center; justify-content:space-between; gap:15px; flex-wrap:wrap;
+}
+header h1 { font-size:22px; margin:0; }
+main { max-width:1200px; margin:auto; padding:22px; }
+.panel { background:white; border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:20px; }
+.hidden { display:none!important; }
+input,textarea,select {
+  width:100%; padding:11px; border:1px solid var(--border);
+  border-radius:8px; background:white; margin-top:5px;
+}
+label { display:block; font-size:13px; font-weight:700; margin-bottom:12px; }
+button {
+  border:0; border-radius:8px; padding:10px 14px; font-weight:700;
+  background:var(--green); color:white;
+}
+button.secondary { background:#e6f0e9; color:var(--dark); }
+button.danger { background:#b42318; }
+button:disabled { opacity:.5; cursor:not-allowed; }
+.grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; }
+.stat { padding:18px; background:#e9f4ec; border-radius:12px; }
+.stat strong { display:block; font-size:25px; margin-top:8px; }
+.formgrid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.full { grid-column:1/-1; }
+.table-wrap { overflow-x:auto; }
+table { border-collapse:collapse; width:100%; min-width:750px; }
+th,td { padding:12px; text-align:left; border-bottom:1px solid var(--border); vertical-align:top; }
+th { background:#f3f7f4; }
+.actions { display:flex; gap:6px; flex-wrap:wrap; }
+#message { white-space:pre-wrap; line-height:1.5; }
+.small { font-size:12px; color:var(--muted); line-height:1.5; }
+.tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.tabs button.active { background:var(--dark); }
+@media(max-width:800px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:520px) {
+  main { padding:12px; }
+  .panel { padding:14px; }
+  .grid { grid-template-columns:1fr 1fr; }
+  .formgrid { grid-template-columns:1fr; }
+  .full { grid-column:auto; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>RealisticMart Admin</h1>
+  <div>
+    <span id="signedInAs"></span>
+    <button id="logoutButton" class="secondary hidden">Sign Out</button>
+  </div>
+</header>
+
+<main>
+  <section id="loginPanel" class="panel">
+    <h2>Admin Sign In</h2>
+    <p class="small">Sign in with the administrator account created in Supabase Auth.</p>
+    <form id="loginForm">
+      <label>Email
+        <input type="email" id="email" autocomplete="username" required>
+      </label>
+      <label>Password
+        <input type="password" id="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit" id="loginButton">Sign In</button>
+    </form>
+    <p id="loginMessage" role="status"></p>
+  </section>
+
+  <section id="dashboard" class="hidden">
+    <div class="panel">
+      <h2>Store Overview</h2>
+      <div class="grid">
+        <div class="stat">Products<strong id="statProducts">—</strong></div>
+        <div class="stat">Active Products<strong id="statActive">—</strong></div>
+        <div class="stat">Orders<strong id="statOrders">—</strong></div>
+        <div class="stat">Order Value<strong id="statRevenue">—</strong></div>
+      </div>
+      <p class="small">Order value is the total of saved orders, not necessarily collected revenue.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="active" data-tab="productsSection">Products</button>
+      <button data-tab="ordersSection">Orders</button>
+      <button data-tab="settingsSection">Store Settings</button>
+    </div>
+
+    <section id="productsSection" class="panel">
+      <h2>Manage Products</h2>
+      <p class="small">Product edits require the correct Supabase Row Level Security policies for your admin account.</p>
+
+      <form id="productForm">
+        <input type="hidden" id="productId">
+        <div class="formgrid">
+          <label>Product Name *
+            <input id="productName" required maxlength="150">
+          </label>
+          <label>Category
+            <input id="productCategory" maxlength="80" value="General">
+          </label>
+          <label>Price (₹) *
+            <input id="productPrice" type="number" min="0" step="0.01" required>
+          </label>
+          <label>Stock Quantity *
+            <input id="productStock" type="number" min="0" step="1" required>
+          </label>
+          <label class="full">Image URL (HTTPS)
+            <input id="productImage" type="url" placeholder="https://example.com/image.jpg">
+          </label>
+          <label class="full">Description
+            <textarea id="productDescription" rows="3" maxlength="2000"></textarea>
+          </label>
+          <label class="full">
+            <span><input id="productActive" type="checkbox" checked style="width:auto"> Product is active and visible in the store</span>
+          </label>
+        </div>
+        <button type="submit" id="saveProductButton">Save Product</button>
+        <button type="button" class="secondary" id="clearProductButton">Clear Form</button>
+      </form>
+
+      <hr style="border:0;border-top:1px solid #dfe8e1;margin:25px 0">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Product</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="productsTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ordersSection" class="panel hidden">
+      <h2>Manage Orders</h2>
+      <p class="small">Customer address and phone information should only be accessible to authorized administrators.</p>
+      <button id="refreshOrdersButton">Refresh Orders</button>
+      <div class="table-wrap" style="margin-top:15px">
+        <table>
+          <thead>
+            <tr><th>Order</th><th>Customer</th><th>Delivery Address</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="ordersTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="settingsSection" class="panel hidden">
+      <h2>Store Settings</h2>
+      <p class="small">These settings are stored in this browser only. They are not shared between devices or administrators.</p>
+      <label>Customer-care WhatsApp number (country code + digits, no + sign)
+        <input id="whatsappNumber" placeholder="919876543210" inputmode="numeric">
+      </label>
+      <button id="saveSettingsButton">Save Settings on This Device</button>
+      <p class="small">For a permanent store-wide setting, create a protected settings table and admin-only policy in Supabase.</p>
+    </section>
+
+    <div class="panel"><p id="message" role="status"></p></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL";
+const SUPABASE_PUBLISHABLE_KEY = "YOUR_SUPABASE_PUBLISHABLE_KEY";
+
+let db = null;
+let currentUser = null;
+let productCache = [];
+let orderCache = [];
+
+const $ = id => document.getElementById(id);
+const money = n => new Intl.NumberFormat("en-IN", {
+  style:"currency", currency:"INR"
+}).format(Number(n) || 0);
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[c]));
+}
+
+function setupReady() {
+  return SUPABASE_URL.startsWith("https://") &&
+    !SUPABASE_URL.includes("YOUR_") &&
+    SUPABASE_PUBLISHABLE_KEY &&
+    !SUPABASE_PUBLISHABLE_KEY.includes("YOUR_");
+}
+
+function showMessage(message) { $("message").textContent = message; }
+function showLoginMessage(message) { $("loginMessage").textContent = message; }
+
+function setSignedIn(user) {
+  currentUser = user;
+  $("loginPanel").classList.toggle("hidden", !!user);
+  $("dashboard").classList.toggle("hidden", !user);
+  $("logoutButton").classList.toggle("hidden", !user);
+  $("signedInAs").textContent = user ? user.email : "";
+}
+
+async function start() {
+  if (!setupReady()) {
+    showLoginMessage("Setup required: enter your Supabase project URL and publishable key in admin.html.");
+    $("loginButton").disabled = true;
+    return;
+  }
+
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  const { data:{ session } } = await db.auth.getSession();
+  setSignedIn(session?.user || null);
+
+  db.auth.onAuthStateChange((_event, session) => {
+    setSignedIn(session?.user || null);
+    if (session?.user) {
+      setTimeout(() => loadDashboard(), 0);
+    }
+  });
+
+  if (session?.user) await loadDashboard();
+}
+
+$("loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  showLoginMessage("");
+  $("loginButton").disabled = true;
+
+  try {
+    const { data, error } = await db.auth.signInWithPassword({
+      email:$("email").value.trim(),
+      password:$("password").value
+    });
+    if (error) throw error;
+    setSignedIn(data.user);
+    await loadDashboard();
+  } catch (error) {
+    showLoginMessage("Sign-in failed. Check your email, password, and Supabase Auth settings.");
+  } finally {
+    $("loginButton").disabled = false;
+  }
+});
+
+$("logoutButton").addEventListener("click", async () => {
+  if (db) await db.auth.signOut();
+  setSignedIn(null);
+});
+
+document.querySelectorAll("[data-tab]").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll("[data-tab]").forEach(b => b.classList.remove("active"));
+    button.classList.add("active");
+    ["productsSection","ordersSection","settingsSection"].forEach(id =>
+      $(id).classList.toggle("hidden", id !== button.dataset.tab)
+    );
+    if (button.dataset.tab === "ordersSection") loadOrders();
+  });
+});
+
+async function loadDashboard() {
+  if (!currentUser || !db) return;
+  await loadProducts();
+  await loadOrders();
+}
+
+async function loadProducts() {
+  const { data, error } = await db.from("products")
+    .select("id,name,description,price,image_url,category,stock_quantity,active,created_at")
+    .order("created_at", { ascending:false });
+
+  if (error) {
+    showMessage("Could not load products. Confirm your admin account is authorized by the products-table RLS policies.");
+    console.error(error);
+    return;
+  }
+
+  productCache = data || [];
+  $("statProducts").textContent = productCache.length;
+  $("statActive").textContent = productCache.filter(p => p.active).length;
+
+  $("productsTable").innerHTML = productCache.map(p => `
+    <tr>
+      <td><strong>${escapeHTML(p.name)}</strong><br><small>${escapeHTML(p.category)}</small></td>
+      <td>${money(p.price)}</td>
+      <td>${Number(p.stock_quantity)}</td>
+      <td>${p.active ? "Active" : "Inactive"}</td>
+      <td><div class="actions">
+        <button onclick="editProduct(${Number(p.id)})">Edit</button>
+        <button class="secondary" onclick="toggleProduct(${Number(p.id)})">${p.active ? "Deactivate" : "Activate"}</button>
+        <button class="danger" onclick="deleteProduct(${Number(p.id)})">Delete</button>
+      </div></td>
+    </tr>`).join("");
+
+  showMessage("");
+}
+
+function clearProductForm() {
+  $("productForm").reset();
+  $("productId").value = "";
+  $("productCategory").value = "General";
+  $("productActive").checked = true;
+}
+
+$("clearProductButton").addEventListener("click", clearProductForm);
+
+window.editProduct = id => {
+  const p = productCache.find(item => Number(item.id) === Number(id));
+  if (!p) return;
+  $("productId").value = p.id;
+  $("productName").value = p.name || "";
+  $("productCategory").value = p.category || "General";
+  $("productPrice").value = p.price;
+  $("productStock").value = p.stock_quantity;
+  $("productImage").value = p.image_url || "";
+  $("productDescription").value = p.description || "";
+  $("productActive").checked = !!p.active;
+  window.scrollTo({ top:0, behavior:"smooth" });
+};
+
+$("productForm").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!currentUser) return;
+
+  const image = $("productImage").value.trim();
+  if (image && !image.startsWith("https://")) {
+    alert("Please use an HTTPS image URL.");
+    return;
+  }
+
+  const product = {
+    name:$("productName").value.trim(),
+    category:$("productCategory").value.trim() || "General",
+    price:Number($("productPrice").value),
+    stock_quantity:Number($("productStock").value),
+    image_url:image,
+    description:$("productDescription").value.trim(),
+    active:$("productActive").checked
+  };
+
+  if (!product.name || product.price < 0 || !Number.isFinite(product.price) ||
+      !Number.isInteger(product.stock_quantity) || product.stock_quantity < 0) {
+    alert("Please check the product name, price, and stock quantity.");
+    return;
+  }
+
+  const id = $("productId").value;
+  $("saveProductButton").disabled = true;
+
+  try {
+    const result = id
+      ? await db.from("products").update(product).eq("id", Number(id)).select()
+      : await db.from("products").insert(product).select();
+
+    if (result.error) throw result.error;
+    if (!result.data?.length) {
+      throw new Error("No product was changed. Check your database permissions.");
+    }
+
+    clearProductForm();
+    await loadProducts();
+    showMessage("Product saved successfully.");
+  } catch (error) {
+    console.error(error);
+    showMessage("Could not save product. Verify that your authenticated admin account has permission under the products-table RLS policies.");
+  } finally {
+    $("saveProductButton").disabled = false;
+  }
+});
+
+window.toggleProduct = async id => {
+  const p = productCache.find(item => Number(item.id) === Number(id));
+  if (!p) return;
+
+  const { data, error } = await db.from("products")
+    .update({active:!p.active}).eq("id", id).select();
+
+  if (error || !data?.length) {
+    showMessage("Could not update product status. Check admin database permissions.");
+    return;
+  }
+  await loadProducts();
+};
+
+window.deleteProduct = async id => {
+  if (!confirm("Permanently delete this product? Consider deactivating it instead.")) return;
+
+  const { data, error } = await db.from("products").delete().eq("id", id).select();
+  if (error || !data?.length) {
+    showMessage("Could not delete product. Check admin database permissions.");
+    return;
+  }
+  await loadProducts();
+};
+
+async function loadOrders() {
+  if (!currentUser || !db) return;
+
+  const { data, error } = await db.from("orders")
+    .select("id,order_number,customer_name,phone,address_line1,address_line2,city,state,pincode,items,total_amount,payment_method,status,created_at")
+    .order("created_at", {ascending:false})
+    .limit(200);
+
+  if (error) {
+    $("ordersTable").innerHTML = "";
+    showMessage("Orders are unavailable. Configure an admin-only orders-table RLS policy before using this dashboard.");
+    console.error(error);
+    return;
+  }
+
+  orderCache = data || [];
+  $("statOrders").textContent = orderCache.length;
+  $("statRevenue").textContent = money(orderCache.reduce((sum,o) =>
+    sum + (o.status === "Cancelled" ? 0 : Number(o.total_amount || 0)), 0));
+
+  $("ordersTable").innerHTML = orderCache.map(o => {
+    const items = Array.isArray(o.items) ? o.items.map(item =>
+      `${escapeHTML(item.name || ("Product " + (item.product_id ?? "")))} × ${Number(item.quantity) || 0}`
+    ).join("<br>") : escapeHTML(JSON.stringify(o.items || {}));
+
+    const created = new Date(o.created_at);
+    const elapsed = Date.now() - created.getTime();
+    const canCancel = o.status !== "Cancelled" &&
+      o.status !== "Delivered" &&
+      o.status !== "Returned" &&
+      elapsed >= 0 && elapsed <= 5*60*60*1000;
+
+    return `<tr>
+      <td><strong>${escapeHTML(o.order_number)}</strong><br><small>${created.toLocaleString()}</small></td>
+      <td>${escapeHTML(o.customer_name)}<br>${escapeHTML(o.phone)}</td>
+      <td>${escapeHTML(o.address_line1)} ${escapeHTML(o.address_line2)}<br>${escapeHTML(o.city)}, ${escapeHTML(o.state)} ${escapeHTML(o.pincode)}</td>
+      <td>${items}</td>
+      <td>${money(o.total_amount)}<br>${escapeHTML(o.payment_method)}</td>
+      <td>
+        <select id="status-${Number(o.id)}">
+          ${["Pending","Confirmed","Cancelled","Shipped","Delivered","Return requested","Returned"].map(s =>
+            `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}
+        </select>
+      </td>
+      <td><div class="actions">
+        <button onclick="saveOrderStatus(${Number(o.id)})">Save Status</button>
+        ${canCancel ? `<button class="danger" onclick="adminCancelOrder(${Number(o.id)})">Cancel</button>` : ""}
+      </div></td>
+    </tr>`;
+  }).join("");
+}
+
+window.saveOrderStatus = async id => {
+  const status = $("status-" + id).value;
+  const allowed = ["Pending","Confirmed","Cancelled","Shipped","Delivered","Return requested","Returned"];
+  if (!allowed.includes(status)) return;
+
+  if (status === "Cancelled") {
+    alert("Use the secure server-side cancellation process to enforce the five-hour rule. Direct status changes should not bypass it.");
+    return;
+  }
+
+  /*
+    This direct update is only safe if your RLS policies authorize admins
+    and you accept that stronger server-side transition validation is not
+    implemented here. Production order status changes should be performed
+    through a protected Edge Function.
+  */
+  showMessage("Order status changes require a protected admin Edge Function. No status was changed.");
+};
+
+window.adminCancelOrder = async id => {
+  const order = orderCache.find(o => Number(o.id) === Number(id));
+  if (!order) return;
+
+  const elapsed = Date.now() - new Date(order.created_at).getTime();
+  if (elapsed < 0 || elapsed > 5*60*60*1000) {
+    alert("The five-hour cancellation window has expired.");
+    return;
+  }
+
+  alert("Cancellation needs a protected server-side function to enforce the time limit and restore stock safely. No cancellation was made.");
+};
+
+$("refreshOrdersButton").addEventListener("click", loadOrders);
+
+$("saveSettingsButton").addEventListener("click", () => {
+  const number = $("whatsappNumber").value.trim();
+  if (number && !/^\d{8,15}$/.test(number)) {
+    alert("Enter the WhatsApp number using digits only, including country code.");
+    return;
+  }
+  localStorage.setItem("realisticmart_support_whatsapp", number);
+  alert("Saved on this browser only.");
+});
+
+$("whatsappNumber").value = localStorage.getItem("realisticmart_support_whatsapp") || "";
+
+start();
+</script>
+</body>
+</html>
